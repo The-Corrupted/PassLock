@@ -29,7 +29,15 @@ int main(void) {
 		} else {
 			std::cout<<"Bad credentials."<<std::endl;
 			attempts += 1;
+			if ( attempts == 3 ) {
+				std::cout<<"Too many login attempts made. Exiting program."<<std::endl;
+				return 0;
+			}
 		}
+	}
+	Menu main_menu(user_data);
+	while (true) {
+		main_menu.OptionsPrompt();
 	}
 	return 0;
 }

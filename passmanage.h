@@ -26,13 +26,14 @@ class Encryption {
 										   '[', ']'
 									       };
 
-		std::string Encrypt(const std::string&, const char&, const int&);
-		int Generate_Random_Number(void) const;
-		char Generate_Random_Direction(void) const;
+		std::string Encrypt( const std::string&, const char&, const int& );
+		int Generate_Random_Number( void ) const;
+		char Generate_Random_Direction( void ) const;
 	public:
-		bool WriteEncryptedAccount(std::string, std::string, std::string);
-		bool WriteEncryptedUser(std::string, std::string, std::string);
-		std::string Decrypt(std::string, std::string);
+		bool WriteEncryptedAccount( std::string, std::string, std::string, std::string );
+		bool WriteEncryptedUser( std::string, std::string, std::string );
+		bool RemoveEncryptedAccount( std::string, std::string );
+		std::string Decrypt( std::string, std::string );
 };
 
 class User {
@@ -41,13 +42,28 @@ class User {
 		std::string c_user;
 		std::string user_file;
 		Encryption enc;
-		bool Set_User_Map(void);
-		bool Set_User_File(void);
+		bool Set_User_Map( void );
+		bool Set_User_File( void );
+		bool Set_Accounts_File( void );
 	public:
-		bool Set_User(void);
-		void Construct_User_File(void);
-		std::string Get_User(void) const;
-		bool New_User(void);
+		bool Set_User( void );
+		void Construct_User_File( void );
+		std::string Get_User( void ) const;
+		bool New_User( void );
+};
+
+class Menu {
+	private:
+		bool AddAccountPasswordCombination( void );
+		bool DeleteAccountPasswordCombination( void );
+		bool SetAccountFile( void );
+		std::string c_user;
+		std::string account_file;
+		Encryption enc;
+
+	public:
+		Menu( User );
+		void OptionsPrompt( void );
 };
 
 #endif

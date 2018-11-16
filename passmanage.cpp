@@ -1,6 +1,8 @@
 #include "passmanage.h"
+#include <algorithm>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <ios>
@@ -10,17 +12,17 @@
 #include <random>
 
 
-int Encryption::Generate_Random_Number(void) const {
+int Encryption::Generate_Random_Number( void ) const {
 	int range = char_map.size() - 1;
 	static std::random_device rd;
-	static std::mt19937 rng(rd());
-	static std::uniform_int_distribution<int> uid(1,range);
+	static std::mt19937 rng( rd() );
+	static std::uniform_int_distribution<int> uid( 1,range );
 	return uid(rng);
 }
 
-char Encryption::Generate_Random_Direction(void) const {
+char Encryption::Generate_Random_Direction( void ) const {
 	static std::random_device rd;
-	static std::mt19937 rng(rd());
+	static std::mt19937 rng( rd() );
 	static std::uniform_int_distribution<int> uid(0,1);
 	int gen_number = uid(rng);
 	if ( gen_number ) {
@@ -29,20 +31,19 @@ char Encryption::Generate_Random_Direction(void) const {
 	return 'e';                              //Right
 }
 
-std::string Encryption::Encrypt(const std::string& text, const char& direction, const int& shift) {
+std::string Encryption::Encrypt( const std::string& text, const char& direction, const int& shift ) {
 	std::string encrypted_text = "";
 	if ( direction == 'e' ) {
 		for(int x=0; x<text.length();x++) {
-			//std::cout<<"Decrypted_Text: "<<decrypted_text<<std::endl;
 			const char c_char = text[x];
-			for ( int y=0; y<char_map.size();y++) {
+			for ( int y=0; y<char_map.size();y++ ) {
 				if ( char_map[y] == c_char ) {
 					if ( y - shift < 0 ) {
 						int negated = ( y - shift ) * -1;
-						encrypted_text.push_back(char_map[char_map.size() - negated]);
+						encrypted_text.push_back( char_map[char_map.size() - negated] );
 						break;
 					}
-					encrypted_text.push_back(char_map[y-shift]);
+					encrypted_text.push_back( char_map[y-shift] );
 					break;
 				}
 			}
@@ -50,16 +51,16 @@ std::string Encryption::Encrypt(const std::string& text, const char& direction, 
 	}
 	else {
 		for(int x=0; x<text.length();x++) {
-			//std::cout<<"Decrypted_Text: "<<decrypted_text<<std::endl;
 			const char c_char = text[x];
 			for ( int y=0; y<char_map.size();y++) {
 				if ( char_map[y] == c_char ) {
-					if ( y - shift < 0 ) {
-						int negated = ( y - shift ) * -1;
-						encrypted_text.push_back(char_map[char_map.size() - negated]);
+					if ( y + shift > char_map.size()-1 ) {
+						int wrap_pos =  y + shift - ( char_map.size() );
+						// std::cout<<"Wrap_pos: "<<wrap_pos<<std::endl;
+						encrypted_text.push_back( char_map[wrap_pos] );
 						break;
 					}
-					encrypted_text.push_back(char_map[y-shift]);
+					encrypted_text.push_back( char_map[y+shift] );
 					break;
 				}
 			}
@@ -68,19 +69,54 @@ std::string Encryption::Encrypt(const std::string& text, const char& direction, 
 	return encrypted_text;
 }
 
-bool Encryption::WriteEncryptedAccount(std::string account, std::string password, std::string save_file) {
-
+bool Encryption::WriteEncryptedAccount( std::string account, std::string password, std::string save_file, std::string username="" ) {
+	std::cout<<"Account: "<<account<<"\nPassword: "<<password<<"\nUsername: "<<username<<std::endl;
+	int shift = Generate_Random_Number();
+	int direction = Generate_Random_Direction();
+	std::string enc_account = Encrypt ( account, direction, shift );
+	std::string enc_password = Encrypt( password, direction, shift );
+	std::ofstream a_file( save_file, std::ios_base::app | std::ios_base::out );
+	if ( username != "" || username != " " || username != "\n" ) {
+		std::string enc_usermail = "";
+		std::cout<<"Username: "<<username<<std::endl;
+		enc_usermail = Encrypt( username, direction, shift );
+		if ( a_file.is_open() ) {
+			std::cout<<"Saving account."<<std::endl;
+			a_file<<enc_account<<" "<<enc_usermail<<" "<<enc_password<<" "<<direction<<shift<<'\n';
+			if ( a_file.fail() ) {
+				std::cout<<"Failed to write to file."<<std::endl;
+				a_file.close();
+				return false;
+			}
+			a_file.close();
+			return true;
+		}
+		std::cout<<"Failed to open file."<<std::endl;
+		return false;
+	}
+	if ( a_file.is_open() ) {
+		std::cout<<"Saving account."<<std::endl;
+		a_file<<enc_account<<" "<<enc_password<<" "<<direction<<shift<<'\n';
+		if ( a_file.fail() ) {
+			std::cout<<"Failed to write to file."<<std::endl;
+			a_file.close();
+			return true;
+		}
+		std::cout<<"Failed to open file."<<std::endl;
+		return false;
+	}
+	std::cout<<"Failed to open file."<<std::endl;
 	return false;
 }
 
-bool Encryption::WriteEncryptedUser(std::string username, std::string password, std::string save_file) {
+bool Encryption::WriteEncryptedUser( std::string username, std::string password, std::string save_file ) {
 	//Randomly generate shift and direction for the username and password encryption
 	int shift = Generate_Random_Number();
 	char direction = Generate_Random_Direction();
-	std::cout<<"Shift: " <<shift<<"\nDirection: "<<direction<<std::endl;
+	std::cout<<"Shift: "<<shift<<"\nDirection: "<<direction<<std::endl;
 	//Encrypt text
-	std::string enc_user_name = Encrypt(username, direction, shift);
-	std::string enc_password = Encrypt(password, direction, shift);
+	std::string enc_user_name = Encrypt( username, direction, shift );
+	std::string enc_password = Encrypt( password, direction, shift );
 	//Write to file.
 	std::cout<<"User file: "<<save_file<<std::endl;
 	std::ofstream u_file(save_file, std::ios_base::app | std::ios_base::out);
@@ -99,40 +135,43 @@ bool Encryption::WriteEncryptedUser(std::string username, std::string password, 
 	return false;
 }
 
-std::string Encryption::Decrypt(std::string text, std::string code) {
+std::string Encryption::Decrypt( std::string text, std::string code ) {
 	const char direction = code[0];
-	const int shift = std::stoi(code.substr(1, code.length()));
+	const int shift = std::stoi( code.substr( 1, code.length() ));
 	//Start decryption loop
 	std::string decrypted_text = "";
+//	std::cout<<"Direction: "<<direction<<"\nShift: "<<shift<<std::endl;
 	if ( direction == 'e') {
-		for(int x=0; x<text.length();x++) {
+		for( int x=0; x<text.length();x++ ) {
 			//std::cout<<"Decrypted_Text: "<<decrypted_text<<std::endl;
 			const char c_char = text[x];
-			for ( int y=0; y<char_map.size();y++) {
+			for ( int y=0; y<char_map.size();y++ ) {
 				if ( char_map[y] == c_char ) {
 					if ( y + shift > char_map.size()-1 ) {
 						int wrap_pos =  y + shift - ( char_map.size() );
-						decrypted_text.push_back(char_map[wrap_pos]);
+						// std::cout<<"Wrap_pos: "<<wrap_pos<<std::endl;
+						decrypted_text.push_back( char_map[wrap_pos] );
 						break;
 					}
-					decrypted_text.push_back(char_map[y+shift]);
+					decrypted_text.push_back( char_map[y+shift] );
 					break;
 				}
 			}
 		}
 	}
 	else {
-		for(int x=0; x<text.length();x++) {
+//		std::cout<<"Decrypting: "<<text<<std::endl;
+		for( int x=0; x<text.length();x++ ) {
 			//std::cout<<"Decrypted_Text: "<<decrypted_text<<std::endl;
 			const char c_char = text[x];
-			for ( int y=0; y<char_map.size();y++) {
+			for ( int y=0; y<char_map.size();y++ ) {
 				if ( char_map[y] == c_char ) {
 					if ( y - shift < 0 ) {
 						int negated = ( y - shift ) * -1;
-						decrypted_text.push_back(char_map[char_map.size() - negated]);
+						decrypted_text.push_back( char_map[char_map.size() - negated] );
 						break;
 					}
-					decrypted_text.push_back(char_map[y-shift]);
+					decrypted_text.push_back( char_map[y-shift] );
 					break;
 				}
 			}
@@ -142,19 +181,19 @@ std::string Encryption::Decrypt(std::string text, std::string code) {
 	return decrypted_text;
 }
 
-bool User::Set_User_Map(void) {
+bool User::Set_User_Map( void ) {
 	//Set home directory.
 	bool set = Set_User_File();
-	if (!set) {
+	if ( !set ) {
 		std::cout<<"User file didn't set.";
 		return false;
 	}
 	std::ifstream users_file(user_file, std::ifstream::in);
 	if ( !users_file ) {
 		std::cout<<"This file does not exist. Have any users been registered?"<<std::endl;
-		return false;		
+		return false;
 	}
-	while (!users_file.eof()) {
+	while ( !users_file.eof() ) {
 		std::string registered_user;
 		std::string user_password;
 		std::string code;
@@ -169,20 +208,22 @@ bool User::Set_User_Map(void) {
 	return true;
 }
 
-bool User::Set_User(void) {
+bool User::Set_User( void ) {
 	std::cout<<"Username: ";
 	std::string user;
 	std::string password;
 	std::cin>>user;
 	// Check users file
-	bool map_filled = Set_User_Map();
-	if (!map_filled) {
+	bool map_filled = Set_User_Map();        //Move to init and
+	                                         //special refresh function.
+	if ( !map_filled ) {
 		return map_filled;                   //Failed
 	}
 	bool found_flag = false;
 	std::vector<std::string> f_user;
-	std::cout<<user_map.size()<<std::endl;
+	// std::cout<<user_map.size()<<std::endl;
 	for ( const auto& v : user_map ) {
+		// std::cout<<"User: "<<v[0]<<"\nCode: "<<v[2]<<std::endl;
 		if ( enc.Decrypt(v[0], v[2]) == user ) {
 			found_flag = true;
 			f_user = v;
@@ -193,8 +234,8 @@ bool User::Set_User(void) {
 		std::cout<<"Password: ";
 		std::cin>>password;
 		//Check for password
-		if ( password == enc.Decrypt(f_user[1], f_user[2]) ) {
-			c_user = enc.Decrypt(f_user[0], f_user[2]);
+		if ( password == enc.Decrypt( f_user[1], f_user[2] ) ) {
+			c_user = enc.Decrypt( f_user[0], f_user[2] );
 			return true;
 		}
 		else {
@@ -204,12 +245,13 @@ bool User::Set_User(void) {
 	return false;
 }
 
-std::string User::Get_User(void) const {
+std::string User::Get_User( void ) const {
 	return c_user;
 }
 
-bool User::New_User(void) {
-	bool file_set = Set_User_File();
+bool User::New_User( void ) {
+	bool file_set = Set_User_File();     //Move to init and special refresh
+                                         //function
 	if (! file_set ) {
 		std::cout<<"Failed to set user map."<<std::endl;
 		return false;
@@ -230,8 +272,8 @@ bool User::New_User(void) {
 		std::cin>>password_check;
 		if ( password == password_check ) {
 			//write to file
-			bool encrypt_user = enc.WriteEncryptedUser(new_user, password, user_file);
-			if (! encrypt_user ) {
+			bool encrypt_user = enc.WriteEncryptedUser( new_user, password, user_file );
+			if ( ! encrypt_user ) {
 				std::cout<<"Failed to create user."<<std::endl;
 				return false;
 			}
@@ -248,7 +290,7 @@ bool User::New_User(void) {
 bool User::Set_User_File(void) {
 	const std::string file = "/.Users.txt";
 	const char *homedir;
-	if ((homedir = getenv("HOME")) == NULL ) {
+	if ((homedir = getenv( "HOME" )) == NULL ) {
 		homedir = getpwuid(getuid())->pw_dir;
 	}
 	const std::string home(homedir);
@@ -256,3 +298,62 @@ bool User::Set_User_File(void) {
 	user_file = ffile;
 	return true;
 }
+
+Menu::Menu(User user) {
+	c_user = user.Get_User();
+	SetAccountFile();
+}
+
+void Menu::OptionsPrompt(void) {
+	char choice;
+	std::cout<<"Select an option:"<<std::endl;
+	std::cout<<"1.) Add Account and Password"<<std::endl;
+	std::cout<<"2.) Retrieve Account Password"<<std::endl;
+	std::cout<<"3.) Remove Account and Password"<<std::endl;
+	std::cout<<": ";
+	std::cin>>choice;
+	switch(choice) {
+		case '1':
+			std::cout<<"Adding account."<<std::endl;
+			AddAccountPasswordCombination();
+			break;
+		case '2': 
+			std::cout<<"Retrieving password."<<std::endl;
+			break;
+		case '3':
+			std::cout<<"Removing saved account."<<std::endl;
+			break;
+		default:
+			std::cout<<"Invalid option selected."<<std::endl;
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			break;
+	}
+}
+
+bool Menu::AddAccountPasswordCombination( void ) {
+	std::string account;
+	std::string password;
+	std::string optional_username;
+	std::cout<<"Account: ";
+	//Ignore any newline in the buffer from any previous std::cin>>'s
+	std::cin.ignore(1, '\n');
+	std::getline( std::cin, account );
+	std::cout<<"(Optional) Username/Email: ";
+	std::getline( std::cin, optional_username );
+	std::cout<<"Password: ";
+	std::getline( std::cin, password );
+	enc.WriteEncryptedAccount( account, password, account_file, optional_username );
+}
+
+bool Menu::SetAccountFile( void ) {
+	const std::string file = "/.Accounts.txt";
+	const char *homedir;
+	if ((homedir = getenv( "HOME" )) == NULL ) {
+		homedir = getpwuid(getuid())->pw_dir;
+	}
+	const std::string home(homedir);
+	const std::string afile = home + file;
+	account_file = afile;
+	std::cout<<"Account file: "<<account_file<<std::endl;
+	return true;
+}	
