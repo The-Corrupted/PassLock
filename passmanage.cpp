@@ -411,7 +411,7 @@ std::vector<std::string> Menu::RetrieveAccount( std::string req_account ) {
 	return matched_details;
 }
 
-void Menu::DisplayRetrieved( std::vector<std::string> aquired_details ) {
+void Menu::DisplayRetrieved( std::vector<std::string> acquired_details ) {
 	if ( aquired_details.size() <= 1 ) {
 		cls();
 		std::cout<<"***Couldn't find the requested account***"<<std::endl;
@@ -421,8 +421,8 @@ void Menu::DisplayRetrieved( std::vector<std::string> aquired_details ) {
 	} else if ( aquired_details.size() == 2 ) {
 		cls();
 		std::cout<<"***Account Details***\n\n"<<std::endl;
-		std::cout<<"Account: "<<aquired_details[0]<<std::endl;
-		std::cout<<"Password: "<<aquired_details[1]<<std::endl;
+		std::cout<<"Account: "<<acquired_details[0]<<std::endl;
+		std::cout<<"Password: "<<acquired_details[1]<<std::endl;
 		std::cout<<"\n\n-------Press any button to continue-------"<<std::endl;
 		std::cin.ignore(1, '\n');
 		int ch = std::cin.get();
@@ -430,9 +430,9 @@ void Menu::DisplayRetrieved( std::vector<std::string> aquired_details ) {
 	} else {
 		cls();
 		std::cout<<"***Account Details***\n\n"<<std::endl;
-		std::cout<<"Account: "<<aquired_details[0]<<std::endl;
-		std::cout<<"Username/Email: "<<aquired_details[1]<<std::endl;
-		std::cout<<"Password: "<<aquired_details[2]<<std::endl;
+		std::cout<<"Account: "<<acquired_details[0]<<std::endl;
+		std::cout<<"Username/Email: "<<acquired_details[1]<<std::endl;
+		std::cout<<"Password: "<<acquired_details[2]<<std::endl;
 		std::cout<<"\n\n-------Press any button to continue-------"<<std::endl;
 		std::cin.ignore(1, '\n');
 		int ch = std::cin.get();
