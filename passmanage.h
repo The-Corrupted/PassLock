@@ -55,6 +55,8 @@ class User {
 class Menu {
 	private:
 		bool AddAccountPasswordCombination( void );
+		std::vector<std::string> RetrieveAccount( std::string );
+		void DisplayRetrieved(std::vector<std::string>);
 		bool DeleteAccountPasswordCombination( void );
 		bool SetAccountFile( void );
 		std::string c_user;

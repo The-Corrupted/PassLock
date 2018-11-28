@@ -10,6 +10,26 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <random>
+#include <iterator>
+
+
+// ----------------------------Global functions-------------------------------------
+
+void cls( void ) {
+	for(int x=0; x<60; x++) {
+		std::cout<<std::endl;
+	}
+}
+
+void PrintUnderlinedText( std::string text ) {
+	std::cout<<text<<std::endl;
+	for ( char& c : text ) {
+		std::cout<<"-";
+	}
+	std::cout<<std::endl;
+}
+
+//-----------------------------Class Definitions---------------------------------
 
 
 int Encryption::Generate_Random_Number( void ) const {
@@ -70,15 +90,14 @@ std::string Encryption::Encrypt( const std::string& text, const char& direction,
 }
 
 bool Encryption::WriteEncryptedAccount( std::string account, std::string password, std::string save_file, std::string username="" ) {
-	std::cout<<"Account: "<<account<<"\nPassword: "<<password<<"\nUsername: "<<username<<std::endl;
+	std::cout<<"\n\nAccount: "<<account<<"\nPassword: "<<password<<"\nUsername: "<<username<<std::endl;
 	int shift = Generate_Random_Number();
-	int direction = Generate_Random_Direction();
+	char direction = Generate_Random_Direction();
 	std::string enc_account = Encrypt ( account, direction, shift );
-	std::string enc_password = Encrypt( password, direction, shift );
+	std::string enc_password = Encrypt ( password, direction, shift );
 	std::ofstream a_file( save_file, std::ios_base::app | std::ios_base::out );
 	if ( username != "" || username != " " || username != "\n" ) {
 		std::string enc_usermail = "";
-		std::cout<<"Username: "<<username<<std::endl;
 		enc_usermail = Encrypt( username, direction, shift );
 		if ( a_file.is_open() ) {
 			std::cout<<"Saving account."<<std::endl;
@@ -312,15 +331,20 @@ void Menu::OptionsPrompt(void) {
 	std::cout<<"3.) Remove Account and Password"<<std::endl;
 	std::cout<<": ";
 	std::cin>>choice;
+	std::string r_account;
 	switch(choice) {
 		case '1':
-			std::cout<<"Adding account."<<std::endl;
+			cls();
 			AddAccountPasswordCombination();
 			break;
 		case '2': 
-			std::cout<<"Retrieving password."<<std::endl;
+			cls();
+			std::cout<<"Account: ";
+			std::cin>>r_account;
+			DisplayRetrieved(RetrieveAccount(r_account));
 			break;
 		case '3':
+			cls();
 			std::cout<<"Removing saved account."<<std::endl;
 			break;
 		default:
@@ -328,6 +352,7 @@ void Menu::OptionsPrompt(void) {
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			break;
 	}
+	cls();
 }
 
 bool Menu::AddAccountPasswordCombination( void ) {
@@ -346,7 +371,7 @@ bool Menu::AddAccountPasswordCombination( void ) {
 }
 
 bool Menu::SetAccountFile( void ) {
-	const std::string file = "/.Accounts.txt";
+	const std::string file = "/.Accounts" + c_user + ".txt";
 	const char *homedir;
 	if ((homedir = getenv( "HOME" )) == NULL ) {
 		homedir = getpwuid(getuid())->pw_dir;
@@ -354,6 +379,69 @@ bool Menu::SetAccountFile( void ) {
 	const std::string home(homedir);
 	const std::string afile = home + file;
 	account_file = afile;
-	std::cout<<"Account file: "<<account_file<<std::endl;
 	return true;
 }	
+
+std::vector<std::string> Menu::RetrieveAccount( std::string req_account ) {
+	std::vector<std::string> matched_details;
+	std::ifstream accounts_file(account_file, std::ifstream::in);
+	if (! accounts_file ) {
+		std::cout<<"Couldn't open the accounts file. Does it exist?"<<std::endl;
+		return matched_details;
+	}
+	std::string line;
+	while(getline(accounts_file, line)) {
+		std::stringstream ss(line);
+		std::istream_iterator<std::string> begin(ss);
+		std::istream_iterator<std::string> end;
+		std::vector<std::string> linestrings(begin, end);
+		std::string code = linestrings[linestrings.size() - 1];
+		std::string user = enc.Decrypt(linestrings[0], code);
+		if ( user == req_account ) {
+			if ( linestrings.size() - 1 == 3 ) {      //Check if account present.
+				matched_details = {user, enc.Decrypt(linestrings[1], code),
+										  enc.Decrypt(linestrings[2], code)};
+				break;
+			} else {
+				matched_details = {user, enc.Decrypt(linestrings[1], code)};
+				break;
+			}
+		}
+	}
+	return matched_details;
+}
+
+void Menu::DisplayRetrieved( std::vector<std::string> aquired_details ) {
+	if ( aquired_details.size() <= 1 ) {
+		cls();
+		std::cout<<"***Couldn't find the requested account***"<<std::endl;
+		std::cout<<"-------Press any button to continue-------"<<std::endl;
+		std::cin.ignore(1, '\n');
+		int ch = std::cin.get();
+	} else if ( aquired_details.size() == 2 ) {
+		cls();
+		std::cout<<"***Account Details***\n\n"<<std::endl;
+		std::cout<<"Account: "<<aquired_details[0]<<std::endl;
+		std::cout<<"Password: "<<aquired_details[1]<<std::endl;
+		std::cout<<"\n\n-------Press any button to continue-------"<<std::endl;
+		std::cin.ignore(1, '\n');
+		int ch = std::cin.get();
+		cls();
+	} else {
+		cls();
+		std::cout<<"***Account Details***\n\n"<<std::endl;
+		std::cout<<"Account: "<<aquired_details[0]<<std::endl;
+		std::cout<<"Username/Email: "<<aquired_details[1]<<std::endl;
+		std::cout<<"Password: "<<aquired_details[2]<<std::endl;
+		std::cout<<"\n\n-------Press any button to continue-------"<<std::endl;
+		std::cin.ignore(1, '\n');
+		int ch = std::cin.get();
+		cls();
+	}
+}
+
+bool Menu::DeleteAccountPasswordCombination( void ) {
+	std::ifstream in_file(account_file, std::fstream::in);
+	return true;
+}
+

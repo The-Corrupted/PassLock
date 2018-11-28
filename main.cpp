@@ -6,14 +6,17 @@ int main(void) {
 	//Login/Register User
 	User user_data;
 	char path;
+	cls();
 	std::cout<<"1.) Login\n2.) Register new user\n: ";
 	while ( std::cin>>path ) {
 		if ( path == '1' ) {
 			break;
 		} else if ( path == '2' ) {
 			//Register new user
+			cls();
 			std::cout<<"Registering new user."<<std::endl;
 			user_data.New_User();
+			cls();
 			std::cout<<"1.) Login\n2.) Register new user\n: ";
 			continue;
 		}
@@ -24,7 +27,9 @@ int main(void) {
 	while ( attempts < 3 ) {
 		bool unlocked = user_data.Set_User();
 		if ( unlocked ) {
-			std::cout<<"Welcome: " + user_data.Get_User()<<std::endl;
+			cls();
+			std::string welcome_message = "Welcome: " + user_data.Get_User() + "!";
+			PrintUnderlinedText(welcome_message);
 			break;
 		} else {
 			std::cout<<"Bad credentials."<<std::endl;
