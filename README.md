@@ -1,1 +1,3 @@
 # PassLock
+
+TODO: Add support for Windows. I'm thinking this can be done with some preprocessor directives (_WIN32, __linux__) to verify the OS in use and change included libraries and code based on the #ifdef statements. This has been written to be ( for the most part ) independent of platform, sticking to core C++11 features that should be available on any system with a modern C++ compiler. However, hidding the password in the terminal is system dependent and requires system specific libraries, and in some case, specialized C code. These need to be seperated out from the rest of the program and defined as either its own function or class.
