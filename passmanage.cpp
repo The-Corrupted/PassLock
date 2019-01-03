@@ -11,6 +11,9 @@
 #include <pwd.h>
 #include <random>
 #include <iterator>
+#include "stdlib.h"
+#include <termios.h>
+#include <unistd.h>
 
 
 // ----------------------------Global functions-------------------------------------
@@ -250,9 +253,15 @@ bool User::Set_User( void ) {
 		}
 	}
 	if ( found_flag == true ) {
+		termios oldt;
+		tcgetattr(STDIN_FILENO, &oldt);
+		termios newt = oldt;
+		newt.c_lflag &= ~ECHO;
+		tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 		std::cout<<"Password: ";
 		std::cin>>password;
 		//Check for password
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		if ( password == enc.Decrypt( f_user[1], f_user[2] ) ) {
 			c_user = enc.Decrypt( f_user[0], f_user[2] );
 			return true;
@@ -285,10 +294,16 @@ bool User::New_User( void ) {
 		//Check file for availibility.
 	}
 	while ( true ) {
+		termios oldt;
+		tcgetattr(STDIN_FILENO, &oldt);
+		termios newt = oldt;
+		newt.c_lflag &= ~ECHO;
+		tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 		std::cout<<"Enter password for account.\n: ";
 		std::cin>>password;
 		std::cout<<"Confirm password.\n: ";
 		std::cin>>password_check;
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		if ( password == password_check ) {
 			//write to file
 			bool encrypt_user = enc.WriteEncryptedUser( new_user, password, user_file );
@@ -326,27 +341,38 @@ Menu::Menu(User user) {
 void Menu::OptionsPrompt(void) {
 	char choice;
 	std::cout<<"Select an option:"<<std::endl;
-	std::cout<<"1.) Add Account and Password"<<std::endl;
-	std::cout<<"2.) Retrieve Account Password"<<std::endl;
-	std::cout<<"3.) Remove Account and Password"<<std::endl;
+	std::cout<<"1.) List Accounts"<<std::endl;
+	std::cout<<"2.) Add Account and Password"<<std::endl;
+	std::cout<<"3.) Retrieve Account Password"<<std::endl;
+	std::cout<<"4.) Remove Account and Password"<<std::endl;
+	std::cout<<"5.) Exit"<<std::endl;
 	std::cout<<": ";
 	std::cin>>choice;
 	std::string r_account;
 	switch(choice) {
 		case '1':
 			cls();
+			std::cout<<"Retrieving account stored under this user..."<<std::endl;
+			ListAccounts();
+		case '2':
+			cls();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			AddAccountPasswordCombination();
 			break;
-		case '2': 
+		case '3': 
 			cls();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			std::cout<<"Account: ";
 			std::cin>>r_account;
 			DisplayRetrieved(RetrieveAccount(r_account));
 			break;
-		case '3':
+		case '4':
 			cls();
 			std::cout<<"Removing saved account."<<std::endl;
 			break;
+		case '5':
+			cls();
+			exit(EXIT_SUCCESS);
 		default:
 			std::cout<<"Invalid option selected."<<std::endl;
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -361,13 +387,36 @@ bool Menu::AddAccountPasswordCombination( void ) {
 	std::string optional_username;
 	std::cout<<"Account: ";
 	//Ignore any newline in the buffer from any previous std::cin>>'s
-	std::cin.ignore(1, '\n');
 	std::getline( std::cin, account );
 	std::cout<<"(Optional) Username/Email: ";
 	std::getline( std::cin, optional_username );
+	termios oldt;
+	tcgetattr(STDIN_FILENO, &oldt);
+	termios newt = oldt;
+	newt.c_lflag &= ~ECHO;
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	std::cout<<"Password: ";
 	std::getline( std::cin, password );
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+	std::cout<<"Account: "<<account<<'\n'<<"Password: "<<password<<std::endl;
 	enc.WriteEncryptedAccount( account, password, account_file, optional_username );
+}
+
+bool Menu::ListAccounts( void ) {
+	std::vector<std::string>entries;
+	std::ifstream accounts_file(account_file, std::ifstream::in);
+	if ( ! accounts_file ) {
+		std::cout<"Couldn't open the accounts file. Does it exist?"<<std::endl;
+		return false
+	}
+	std::string line;
+	while(std::getline(accounts_file, line)) {
+		std::stringstream ss(line);
+		std::istream_iterator<std::string> gegin(ss);
+		std::istream_iterator<std::string> end;
+		std::
+	}
+
 }
 
 bool Menu::SetAccountFile( void ) {
@@ -390,13 +439,14 @@ std::vector<std::string> Menu::RetrieveAccount( std::string req_account ) {
 		return matched_details;
 	}
 	std::string line;
-	while(getline(accounts_file, line)) {
+	while(std::getline(accounts_file, line)) {
 		std::stringstream ss(line);
 		std::istream_iterator<std::string> begin(ss);
 		std::istream_iterator<std::string> end;
 		std::vector<std::string> linestrings(begin, end);
 		std::string code = linestrings[linestrings.size() - 1];
 		std::string user = enc.Decrypt(linestrings[0], code);
+		std::cout<<user<<std::endl;
 		if ( user == req_account ) {
 			if ( linestrings.size() - 1 == 3 ) {      //Check if account present.
 				matched_details = {user, enc.Decrypt(linestrings[1], code),
@@ -411,7 +461,7 @@ std::vector<std::string> Menu::RetrieveAccount( std::string req_account ) {
 	return matched_details;
 }
 
-void Menu::DisplayRetrieved( std::vector<std::string> acquired_details ) {
+void Menu::DisplayRetrieved( std::vector<std::string> aquired_details ) {
 	if ( aquired_details.size() <= 1 ) {
 		cls();
 		std::cout<<"***Couldn't find the requested account***"<<std::endl;
@@ -421,8 +471,8 @@ void Menu::DisplayRetrieved( std::vector<std::string> acquired_details ) {
 	} else if ( aquired_details.size() == 2 ) {
 		cls();
 		std::cout<<"***Account Details***\n\n"<<std::endl;
-		std::cout<<"Account: "<<acquired_details[0]<<std::endl;
-		std::cout<<"Password: "<<acquired_details[1]<<std::endl;
+		std::cout<<"Account: "<<aquired_details[0]<<std::endl;
+		std::cout<<"Password: "<<aquired_details[1]<<std::endl;
 		std::cout<<"\n\n-------Press any button to continue-------"<<std::endl;
 		std::cin.ignore(1, '\n');
 		int ch = std::cin.get();
@@ -430,9 +480,9 @@ void Menu::DisplayRetrieved( std::vector<std::string> acquired_details ) {
 	} else {
 		cls();
 		std::cout<<"***Account Details***\n\n"<<std::endl;
-		std::cout<<"Account: "<<acquired_details[0]<<std::endl;
-		std::cout<<"Username/Email: "<<acquired_details[1]<<std::endl;
-		std::cout<<"Password: "<<acquired_details[2]<<std::endl;
+		std::cout<<"Account: "<<aquired_details[0]<<std::endl;
+		std::cout<<"Username/Email: "<<aquired_details[1]<<std::endl;
+		std::cout<<"Password: "<<aquired_details[2]<<std::endl;
 		std::cout<<"\n\n-------Press any button to continue-------"<<std::endl;
 		std::cin.ignore(1, '\n');
 		int ch = std::cin.get();
@@ -441,6 +491,6 @@ void Menu::DisplayRetrieved( std::vector<std::string> acquired_details ) {
 }
 
 bool Menu::DeleteAccountPasswordCombination( void ) {
-
+	std::ifstream in_file(account_file, std::fstream::in);
+	return true;
 }
-

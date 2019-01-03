@@ -1,7 +1,6 @@
 #include <iostream>
 #include "passmanage.cpp"
 
-
 int main(void) {
 	//Login/Register User
 	User user_data;
@@ -28,14 +27,17 @@ int main(void) {
 		bool unlocked = user_data.Set_User();
 		if ( unlocked ) {
 			cls();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			std::string welcome_message = "Welcome: " + user_data.Get_User() + "!";
 			PrintUnderlinedText(welcome_message);
 			break;
 		} else {
 			std::cout<<"Bad credentials."<<std::endl;
 			attempts += 1;
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			if ( attempts == 3 ) {
 				std::cout<<"Too many login attempts made. Exiting program."<<std::endl;
+				cls();
 				return 0;
 			}
 		}
