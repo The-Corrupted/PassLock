@@ -412,7 +412,7 @@ bool Menu::ListAccounts( void ) {
 	std::string line;
 	while(std::getline(accounts_file, line)) {
 		std::stringstream ss(line);
-		std::istream_iterator<std::string> gegin(ss);
+		std::istream_iterator<std::string> begin(ss);
 		std::istream_iterator<std::string> end;
 		std::
 	}
