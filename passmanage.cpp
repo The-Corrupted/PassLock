@@ -353,7 +353,9 @@ void Menu::OptionsPrompt(void) {
 		case '1':
 			cls();
 			std::cout<<"Retrieving account stored under this user..."<<std::endl;
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			ListAccounts();
+			break;
 		case '2':
 			cls();
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -368,7 +370,7 @@ void Menu::OptionsPrompt(void) {
 			break;
 		case '4':
 			cls();
-			std::cout<<"Removing saved account."<<std::endl;
+			DeleteAccountPasswordCombination();
 			break;
 		case '5':
 			cls();
@@ -403,20 +405,43 @@ bool Menu::AddAccountPasswordCombination( void ) {
 }
 
 bool Menu::ListAccounts( void ) {
-	std::vector<std::string>entries;
+	char pause;
+	std::vector<std::vector<std::string>> entries;
 	std::ifstream accounts_file(account_file, std::ifstream::in);
-	if ( ! accounts_file ) {
-		std::cout<"Couldn't open the accounts file. Does it exist?"<<std::endl;
-		return false
+	if ( !accounts_file ) {
+		std::cout<<"Couldn't open the accounts file. Does it exist?"<<std::endl;
+		return false;
 	}
 	std::string line;
 	while(std::getline(accounts_file, line)) {
 		std::stringstream ss(line);
-		std::istream_iterator<std::string> begin(ss);
-		std::istream_iterator<std::string> end;
-		std::
+		std::string word;
+		std::vector<std::string> vals;
+		int x = 0;
+		while(ss) {
+			ss >> word;
+			if ( x  == 0 ) {
+				vals.push_back(word);
+			}
+			if ( ss.tellg() == -1 )  {
+				vals.push_back(word);
+				entries.push_back(vals);
+				break;
+			}
+			x += 1;
+		}
 	}
-
+	if ( entries.size() == 0 ) {
+		std::cout<<"No accounts found."<<std::endl;
+		return false;
+	}
+	std::cout<<"*************         Accounts         ******************\n"<<std::endl;
+	for (uint32_t x = 0; x <= entries.size()-1; x++) {
+		std::cout<<"Account: "<<enc.Decrypt(entries[x][0], entries[x][1])<<std::endl;
+	}
+	std::cout<<"\n*************Click any button to continue****************"<<std::endl;
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	return true;
 }
 
 bool Menu::SetAccountFile( void ) {
@@ -491,6 +516,53 @@ void Menu::DisplayRetrieved( std::vector<std::string> aquired_details ) {
 }
 
 bool Menu::DeleteAccountPasswordCombination( void ) {
+	std::string choice = "";
+	std::cout<<"Choose an account to delete."<<std::endl;
+	ListAccounts();
+	std::cout<<": ";
+	std::cin>>choice;
 	std::ifstream in_file(account_file, std::fstream::in);
+	if ( !in_file ) {
+		std::cout<<"User account file not found. Does it exist?"<<std::endl;
+	}
+	std::string line;
+	bool account_deleted = false;
+	std::vector<std::vector<std::string>> filec;
+	while (std::getline(in_file, line)) {
+		std::stringstream ss(line);
+		std::istream_iterator<std::string> begin(ss);
+		std::istream_iterator<std::string> end;
+		std::vector<std::string> lineS(begin, end);
+		if ( enc.Decrypt(lineS[0], lineS[lineS.size()-1]) == choice ) {
+			account_deleted = true;
+		} else {
+			filec.push_back(lineS);
+		}
+	}
+	in_file.close();
+	if ( !account_deleted ) {
+		std::cout<<"Failed to delete entry. Does it exist?"<<std::endl;
+		return false;
+	}
+	std::ofstream a_file( account_file, std::ios_base::out );
+	if ( !a_file ) {
+		std::cout<<"Failed to open output file. Does it exist?"<<std::endl;
+	}
+	for ( uint32_t x = 0; x < filec.size(); x++ ) {
+		std::string out;
+		for ( uint32_t z = 0; z < filec[x].size(); z++ ) {
+			if ( z == filec[x].size() -1 ) {
+				out.append(filec[x][z]);
+				out += '\n';
+				break;
+			}
+			out.append(filec[x][z]);
+			out.append(" ");
+		}
+		a_file<<out;
+	}
+	std::cout<<choice<<" removed."<<std::endl;
+	std::cout<<"\n-------Press any button to continue-------"<<std::endl;
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	return true;
 }
